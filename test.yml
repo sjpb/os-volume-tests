@@ -1,0 +1,41 @@
+- hosts: localhost
+  become: no
+  gather_facts: no
+  name: Create infra
+  tags: infra
+  tasks:
+    - name: Initialise terraform
+      command: terraform init
+    - name: Destroy infra
+      command: terraform destroy -auto-approve
+    - name: Create infra
+      command: terraform apply -auto-approve
+
+- hosts: all
+  become: yes
+  gather_facts: no
+  tags: checks
+  vars:
+    lsblk_expected:
+      - /var/lib/state
+      - /exports/home
+  tasks:
+    - meta: refresh_inventory
+    - wait_for_connection:
+    - name: Check volume attachments on initial creation
+      command: lsblk
+      register: lsblk_initial
+    - assert:
+        that: item in lsblk_initial.stdout
+        fail_msg: "didn't find {{ item }} in lsblk after instance creation"
+      loop: "{{ lsblk_expected }}"
+    - reboot:
+    - wait_for_connection:
+        delay: 5
+    - name: Check volume attachments after reboot
+      command: lsblk
+      register: lsblk_post_reboot
+    - assert:
+        that: item in lsblk_post_reboot.stdout
+        fail_msg: "didn't find {{ item }} in lsblk after reboot"
+      loop: "{{ lsblk_expected }}"
