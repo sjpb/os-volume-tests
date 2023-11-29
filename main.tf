@@ -102,3 +102,13 @@ output "ip" {
     value = {for instance in openstack_compute_instance_v2.rl: instance.name => instance.access_ip_v4}
     sensitive = true
 }
+
+resource local_file "inventory" {
+    content = <<-EOF
+        [all]
+        %{ for instance in openstack_compute_instance_v2.rl}
+        ${instance.name} ansible_host=${instance.access_ip_v4 ~}
+        %{ endfor }
+    EOF
+    filename = "inventory.ini"
+}
