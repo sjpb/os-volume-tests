@@ -92,6 +92,14 @@ resource "openstack_compute_instance_v2" "rl" {
     mounts:
       - [LABEL=state, /var/lib/state, auto, "defaults,x-systemd.requires=cloud-init.service,_netdev,comment=cloudconfig"]
       - [LABEL=home, /exports/home, auto, "defaults,x-systemd.requires=cloud-init.service,_netdev,comment=cloudconfig,x-systemd.required-by=nfs-server.service,x-systemd.before=nfs-server.service"]
+
+    # this is for debugging purposes, and is obviously insecure!
+    chpasswd:
+      expire: false
+      users:
+        - name: root
+          password: GX67A
+          type: text
   EOF
 
 }
