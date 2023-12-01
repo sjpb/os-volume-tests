@@ -12,8 +12,8 @@ variable "instances" {
         # RL88: "Rocky-8-GenericCloud-Base-8.8-20230518.0.x86_64.qcow2" # scsi, sdX, scsi-0QEMU_QEMU_HARDDISK_58370aeb-77f8-4e0e-976d-95f1634fa4bd
         RL89: "Rocky-8-GenericCloud-Base-8.9-20231119.0.x86_64.qcow2" # no scsi, vdX, virtio-5e4eb5e8-c001-4e16-a
         RL93: "Rocky-9-GenericCloud-Base-9.3-20231113.0.x86_64.qcow2" # no scsi, vdX, virtio-d4c01616-fe98-4a1e-b
-        # default: "openhpc-231027-0916-893570de" # https://github.com/stackhpc/ansible-slurm-appliance/pull/324, # scsi, sdX, scsi-0QEMU_QEMU_HARDDISK_44495415-cced-4275-b856-a45e5c0d7f51
-
+        # RL93-systemd254: "Rocky-9-GenericCloud-Base-9.3-20231113-systemd254.qcow2" # systemd v254
+        default: "openhpc-231027-0916-893570de" # https://github.com/stackhpc/ansible-slurm-appliance/pull/324, # RL8 w/ scsi, sdX, scsi-0QEMU_QEMU_HARDDISK_44495415-cced-4275-b856-a45e5c0d7f51
     }
 }
 
@@ -86,7 +86,7 @@ resource "openstack_compute_instance_v2" "rl" {
     
     bootcmd:
       %{for volume in [openstack_blockstorage_volume_v3.state[each.key], openstack_blockstorage_volume_v3.home[each.key]]}
-      - mke2fs -t ext4 -L ${lower(split(" ", volume.description)[0])} $(readlink -f $(ls /dev/disk/by-id/*${substr(volume.id, 0, 20)}* | head -n1 ))
+      - BLKDEV=$(readlink -f $(ls /dev/disk/by-id/*${substr(volume.id, 0, 20)}* | head -n1 )); blkid -o value -s TYPE $BLKDEV ||  mke2fs -t ext4 -L ${lower(split(" ", volume.description)[0])} $BLKDEV
       %{endfor}
 
     mounts:
