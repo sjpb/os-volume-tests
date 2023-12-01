@@ -10,9 +10,11 @@
       command: terraform destroy -auto-approve
     - name: Create infra
       command: terraform apply -auto-approve
+    - meta: refresh_inventory # NB: must be here so 'hosts: all' in next play gets correct hosts
 
 - hosts: all
   become: yes
+  any_errors_fatal: false
   gather_facts: no
   tags: checks
   vars:
@@ -20,7 +22,7 @@
       - /var/lib/state
       - /exports/home
   tasks:
-    - meta: refresh_inventory
+    
     - wait_for_connection:
     - name: Check volume attachments on initial creation
       command: lsblk
@@ -39,3 +41,18 @@
         that: item in lsblk_post_reboot.stdout
         fail_msg: "didn't find {{ item }} in lsblk after reboot"
       loop: "{{ lsblk_expected }}"
+    - name: Write some data to both attached volumes
+      copy:
+        dest: "{{ item }}/testdata.txt"
+        content: "test data for {{ item }}"
+      loop: "{{ lsblk_expected }}"
+    - name: Reimage instances
+      command: "openstack server rebuild {{ inventory_hostname }}"
+      delegate_to: localhost
+      become: no
+    - wait_for_connection:
+        delay: 10
+    - name: Check data is present on attached volume
+      command: "grep 'test data for {{ item }}' {{ item }}/testdata.txt"
+      loop: "{{ lsblk_expected }}"
+      changed_when: false
