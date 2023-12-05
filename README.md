@@ -44,6 +44,10 @@ Note quoting as per above is important if `cmd` contains spaces.
 
 # Status
 
-After reboot, RL83 has both volumes RL93 only has
-    
-        vdb    252:16   0   10G  0 disk /var/lib/state
+Works on all tested images. See https://github.com/systemd/systemd/issues/30246; had
+to remove the required-by= .. nfs, because:
+
+1. That isn't actually supported in RL8, so is silently ignored.
+1. It removes the default required-by, which means the mount unit is never actually
+   started. I.e. If A specifies RequiredBy=B, A is started when B is started. So if B
+   is the NFS server, which isn't actually started, then A never starts.
