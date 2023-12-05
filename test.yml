@@ -56,3 +56,14 @@
       command: "grep 'test data for {{ item }}' {{ item }}/testdata.txt"
       loop: "{{ lsblk_expected }}"
       changed_when: false
+    - name: Enable and start NFS server
+      systemd:
+        name: nfs-server
+        state: started
+        enabled: true
+    - reboot:
+    - wait_for_connection:
+        delay: 5
+    - name: Check volume attachments after reboot with NFS server
+      command: lsblk
+      register: lsblk_post_reboot
