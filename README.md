@@ -44,10 +44,13 @@ Note quoting as per above is important if `cmd` contains spaces.
 
 # Status
 
-Works on all tested images. See https://github.com/systemd/systemd/issues/30246; had
-to remove the required-by= .. nfs, because:
-
-1. That isn't actually supported in RL8, so is silently ignored.
-1. It removes the default required-by, which means the mount unit is never actually
+Works on all tested images. See https://github.com/systemd/systemd/issues/30246. Note
+that when specifying `required-by= .. nfs..` we *must* also add `remote-fs.target`. This
+is because:
+1. `remote-fs` is the default, which is removed with an explicit specification.
+1. Removing this default means the mount unit is never actually
    started. I.e. If A specifies RequiredBy=B, A is started when B is started. So if B
    is the NFS server, which isn't actually started, then A never starts.
+1. `x-systemd.required-by` isn't supported by RL8 (although `requires` and some others
+are) which means just specifying `required-by .. nfs..` works, as it is silently
+ignored.
